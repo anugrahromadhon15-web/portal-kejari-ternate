@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Adhyaksa Transparan - Kejari Ternate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kejaksaan: {
+                            green: '#005a32',
+                            gold: '#d4af37',
+                            light: '#f0fdf4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Stepper Styles for Mobile/Desktop */
+        .stepper-item { position: relative; flex: 1; text-align: center; }
+        .stepper-item::before {
+            content: ''; position: absolute; top: 12px; left: -50%; width: 100%; height: 2px;
+            background-color: #e5e7eb; z-index: 0;
+        }
+        .stepper-item:first-child::before { content: none; }
+        .stepper-active::before { background-color: #005a32; }
+        
+        @media (max-width: 768px) {
+            .stepper-container { flex-direction: column; align-items: flex-start; }
+            .stepper-item { text-align: left; display: flex; align-items: center; width: 100%; margin-bottom: 1rem; }
+            .stepper-item::before {
+                top: -50%; left: 11px; width: 2px; height: 100%;
+            }
+            .stepper-item:first-child::before { content: none; }
+            .stepper-circle { margin-right: 1rem; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- Header / Navbar -->
+    <header class="bg-kejaksaan-green text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <!-- Logo Placeholder -->
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1">
+                        <svg class="w-full h-full text-kejaksaan-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold leading-tight">Kejaksaan Negeri Ternate</h1>
+                        <p class="text-xs text-kejaksaan-gold">Portal Adhyaksa Transparan</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex overflow-x-auto gap-6 py-3 no-scrollbar" id="tab-container">
+                <button onclick="switchTab('pidum')" id="tab-pidum" class="whitespace-nowrap px-4 py-2 font-semibold text-kejaksaan-green border-b-2 border-kejaksaan-green transition-all">⚖️ Lacak Perkara PIDUM</button>
+                <button onclick="switchTab('pidsus')" id="tab-pidsus" class="whitespace-nowrap px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-kejaksaan-green transition-all">📊 Kinerja PIDSUS</button>
+                <button onclick="switchTab('wbs')" id="tab-wbs" class="whitespace-nowrap px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-kejaksaan-green transition-all">🛡️ Pengaduan WBS</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[70vh]">
+
+        <!-- ======================= -->
+        <!-- TAB 1: PIDUM (Default)  -->
+        <!-- ======================= -->
+        <section id="section-pidum" class="block animate-fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">Pelacak Perkara Pidana Umum</h2>
+                <p class="text-sm text-gray-500 mt-2">Cari status berkas perkara berdasarkan No. SPDP atau Nama Tersangka</p>
+            </div>
+
+            <!-- Search Box (Fitts's Law & Hick's Law applied) -->
+            <div class="max-w-2xl mx-auto bg-white p-4 sm:p-6 rounded-xl shadow-md">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="searchInput" placeholder="Contoh: SPDP/12/III/2026/Res Tte" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kejaksaan-green focus:border-kejaksaan-green outline-none w-full">
+                    <button onclick="searchCase()" class="bg-kejaksaan-green hover:bg-green-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Cari Perkara
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Result (Visibility of System Status) -->
+            <div id="caseResult" class="hidden max-w-4xl mx-auto mt-8 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="bg-kejaksaan-light p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-xs font-bold bg-kejaksaan-green text-white px-2 py-1 rounded">PIDUM</span>
+                        <span class="ml-2 font-mono text-sm text-gray-600">No. Reg: PDM-45/TTE/05/2026</span>
+                    </div>
+                    <span class="text-sm text-gray-500">Pembaruan terakhir: Hari ini, 09:30 WIT</span>
+                </div>
+                
+                <div class="p-6">
+                    <h3 class="text-lg font-bold mb-4">Detail Perkara</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-sm">
+                        <div><span class="text-gray-500">Nama Tersangka:</span> <span class="font-semibold text-gray-900">A*** M*** (Data Masked)</span></div>
+                        <div><span class="text-gray-500">Pasal Sangkaan:</span> <span class="font-semibold text-gray-900">Pasal 363 KUHP</span></div>
+                        <div><span class="text-gray-500">Penyidik:</span> <span class="font-semibold text-gray-900">Polres Ternate</span></div>
+                        <div><span class="text-gray-500">Jaksa Peneliti:</span> <span class="font-semibold text-gray-900">I.R., S.H., M.H.</span></div>
+                    </div>
+
+                    <h3 class="text-lg font-bold mb-4">Linimasa Penanganan</h3>
+                    <!-- Timeline Stepper -->
+                    <div class="stepper-container flex justify-between relative mt-4 mb-8">
+                        <!-- Step 1 -->
+                        <div class="stepper-item stepper-active">
+                            <div class="stepper-circle z-10 relative bg-kejaksaan-green text-white w-6 h-6 rounded-full mx-auto flex items-center justify-center text-xs">✓</div>
+                            <div class="mt-2 md:mt-3 text-xs md:text-sm font-semibold">SPDP (P-16)</div>
+                            <div class="text-[10px] text-gray-500">12 Mei 2026</div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="stepper-item stepper-active">
+                            <div class="stepper-circle z-10 relative bg-kejaksaan-green text-white w-6 h-6 rounded-full mx-auto flex items-center justify-center text-xs">✓</div>
+                            <div class="mt-2 md:mt-3 text-xs md:text-sm font-semibold">Tahap I</div>
+                            <div class="text-[10px] text-gray-500">20 Mei 2026</div>
+                        </div>
+                        <!-- Step 3 (Current) -->
+                        <div class="stepper-item stepper-active">
+                            <div class="stepper-circle z-10 relative bg-kejaksaan-gold text-white w-8 h-8 -mt-1 rounded-full mx-auto flex items-center justify-center shadow-lg animate-pulse">!</div>
+                            <div class="mt-2 md:mt-1 text-xs md:text-sm font-bold text-kejaksaan-green">P-21 (Lengkap)</div>
+                            <div class="text-[10px] text-gray-500">Menunggu Tahap II</div>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="stepper-item">
+                            <div class="stepper-circle z-10 relative bg-gray-300 text-white w-6 h-6 rounded-full mx-auto flex items-center justify-center text-xs">4</div>
+                            <div class="mt-2 md:mt-3 text-xs md:text-sm text-gray-400">Limpah PN</div>
+                        </div>
+                        <!-- Step 5 -->
+                        <div class="stepper-item">
+                            <div class="stepper-circle z-10 relative bg-gray-300 text-white w-6 h-6 rounded-full mx-auto flex items-center justify-center text-xs">5</div>
+                            <div class="mt-2 md:mt-3 text-xs md:text-sm text-gray-400">Inkracht</div>
+                        </div>
+                    </div>
+
+                    <!-- E-Barang Bukti Alert -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                        <div class="flex items-center gap-3">
+                            <span class="text-blue-500 text-2xl">📦</span>
+                            <div>
+                                <p class="text-sm font-bold text-blue-900">Status Barang Bukti: <span class="font-normal text-blue-700">Disita untuk Pembuktian</span></p>
+                                <p class="text-xs text-blue-600">Pengambilan BB gratis melalui layanan Drive-Thru baru dapat dilakukan setelah putusan Inkracht.</p>
+                            </div>
+                        </div>
+                        <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 text-sm font-semibold rounded cursor-not-allowed whitespace-nowrap">Ajukan Pengantaran</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================= -->
+        <!-- TAB 2: PIDSUS           -->
+        <!-- ======================= -->
+        <section id="section-pidsus" class="hidden animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">Transparansi Kinerja Pidana Khusus</h2>
+                <p class="text-sm text-gray-500 mt-1">Laporan Akuntabilitas Pemberantasan Korupsi T.A. 2026</p>
+            </div>
+
+            <!-- Dashboard Visualisasi (Aesthetic-Usability Effect) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Stat Card 1 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Penyelamatan Uang Negara</h3>
+                    <p class="text-3xl font-bold text-kejaksaan-green">Rp 4.250.000.000</p>
+                    <p class="text-xs text-green-600 mt-2 flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7l-5 5-1.5-1.5L4 12l4 4 6-6z" clip-rule="evenodd"></path></svg>
+                        Naik 15% dari tahun sebelumnya
+                    </p>
+                </div>
+                
+                <!-- Chart Area -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="w-full sm:w-1/2">
+                        <h3 class="text-sm font-semibold text-gray-500 mb-4">Komposisi Aset Disita / Dirampas</h3>
+                        <div class="relative h-48 w-full">
+                            <canvas id="assetChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-1/2 space-y-3 text-sm">
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-600">Uang Tunai (Pengganti)</span>
+                            <span class="font-bold text-gray-900">Rp 2.1 Miliar</span>
+                        </div>
+                        <div class="flex justify-between border-b pb-1">
+                            <span class="text-gray-600">Aset Tanah & Bangunan</span>
+                            <span class="font-bold text-gray-900">Rp 1.5 Miliar</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Kendaraan Bermotor</span>
+                            <span class="font-bold text-gray-900">Rp 650 Juta</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linimasa Mandiri Pidsus (Data Masking Implemented) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 class="text-lg font-bold mb-4 border-b pb-2">Daftar Perkara Tipikor Berjalan</h3>
+                <div class="space-y-4">
+                    <!-- Kasus Penyelidikan (Nama disamarkan penuh) -->
+                    <div class="p-4 bg-gray-50 rounded-lg border-l-4 border-yellow-400">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Tahap Penyelidikan</span>
+                                <h4 class="font-semibold text-gray-900 mt-2">Dugaan Tipikor Pengadaan Alat Kesehatan Instansi "X" Ternate</h4>
+                                <p class="text-xs text-gray-500 mt-1">Calon Tersangka: <span class="italic bg-gray-200 px-1 rounded text-gray-600">Dirahasiakan demi kepentingan penyidikan</span></p>
+                            </div>
+                            <span class="text-xs text-gray-400">Mulai: Apr 2026</span>
+                        </div>
+                    </div>
+                    <!-- Kasus Penyidikan (Nama Inisial, Pasal Terbuka) -->
+                    <div class="p-4 bg-gray-50 rounded-lg border-l-4 border-kejaksaan-green">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Tahap Penyidikan</span>
+                                <h4 class="font-semibold text-gray-900 mt-2">Penyimpangan Dana Desa Kec. Pulau Moti T.A. 2024</h4>
+                                <p class="text-xs text-gray-500 mt-1">Tersangka: <span class="font-bold text-gray-700">M.A. (Oknum Kades)</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Pasal: Pasal 2 ayat (1) jo Pasal 3 UU Tipikor</p>
+                            </div>
+                            <span class="text-xs text-gray-400">Sprindik: Mar 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================= -->
+        <!-- TAB 3: WBS Pengaduan    -->
+        <!-- ======================= -->
+        <section id="section-wbs" class="hidden animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- Form Laporan -->
+                <div class="lg:col-span-3 bg-white rounded-xl shadow-md p-6 border-t-4 border-red-700">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Sistem Pelaporan Pelanggaran (WBS)</h2>
+                        <p class="text-sm text-gray-600 mt-2">Laporkan indikasi tindak pidana korupsi. Identitas Anda dijamin aman. <span class="font-bold text-red-600">Sistem ini tidak mencatat IP Address Anda.</span></p>
+                    </div>
+
+                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Laporan WBS terenkripsi telah dikirim. Kode Lacak: WBS-TTE-2026-089');">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Kategori Laporan *</label>
+                            <select class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" required>
+                                <option value="">Pilih Kategori...</option>
+                                <option>Dugaan Tindak Pidana Korupsi</option>
+                                <option>Pungutan Liar (Pungli) Oknum</option>
+                                <option>Pemerasan / Gratifikasi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Uraian Kejadian *</label>
+                            <textarea rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-sm" placeholder="Jelaskan secara singkat kronologi (Siapa, Apa, Kapan, Di mana)..." required></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Lampiran Bukti (PDF/JPG) <span class="text-xs font-normal text-gray-400">Maks 5MB, Terenkripsi (AES-256)</span></label>
+                            <input type="file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer border border-gray-300 rounded-md p-1">
+                        </div>
+                        
+                        <!-- Captcha Simulation -->
+                        <div class="bg-gray-100 p-3 rounded flex items-center justify-between mt-2">
+                            <span class="text-sm text-gray-600 flex items-center gap-2"><input type="checkbox" required> Saya bukan robot (reCAPTCHA v3)</span>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/RecaptchaLogo.svg/120px-RecaptchaLogo.svg.png" alt="Captcha" class="h-6">
+                        </div>
+
+                        <button type="submit" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-lg mt-4 transition duration-200">Kirim Laporan Rahasia</button>
+                    </form>
+                </div>
+
+                <!-- Lacak WBS -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-gray-800 text-white rounded-xl shadow-md p-6">
+                        <h3 class="font-bold text-lg mb-2">Lacak Laporan Anda</h3>
+                        <p class="text-xs text-gray-300 mb-4">Masukkan Unique Tracking Code yang Anda dapatkan saat melapor.</p>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="WBS-TTE-..." class="w-full px-3 py-2 rounded text-gray-900 text-sm focus:outline-none">
+                            <button class="bg-kejaksaan-gold hover:bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded text-sm transition">Cek</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-6">
+                        <h3 class="font-bold text-blue-900 mb-2 flex items-center gap-2"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg> Info Keamanan</h3>
+                        <p class="text-xs text-blue-800 leading-relaxed">Platform ini menggunakan protokol HTTPS dan enkripsi AES-256 untuk dokumen yang diunggah. Database pelapor terpisah dari database website publik. Identitas pelapor dilindungi oleh Undang-Undang Perlindungan Saksi dan Korban.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-8 border-t-4 border-kejaksaan-green">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-center md:text-left">
+            <div>
+                <p class="font-bold text-white mb-1">Kejaksaan Negeri Ternate</p>
+                <p>Jl. Lapangan Pahlawan, Kota Ternate, Maluku Utara</p>
+                <p class="mt-2 text-xs">Menuju Wilayah Bebas dari Korupsi (WBK)</p>
+            </div>
+            <div class="flex flex-col items-center md:items-end gap-3">
+                <!-- Tombol/Link GitHub Ditambahkan di Sini -->
+                <a href="https://github.com/username-anda/nama-repo" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors" title="Lihat Kode Sumber di GitHub">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-xs font-semibold uppercase tracking-wider">Source Code</span>
+                </a>
+                <div class="text-center md:text-right">
+                    <p>&copy; 2026 Tim TI Kejari Ternate.</p>
+                    <p class="text-xs mt-1 text-gray-500">Versi Sistem: 2.0 (Terintegrasi)</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Logika Javascript Sederhana untuk Prototype -->
+    <script>
+        // Tab Switcher Logic
+        function switchTab(tabId) {
+            // Hide all sections
+            document.getElementById('section-pidum').classList.add('hidden');
+            document.getElementById('section-pidsus').classList.add('hidden');
+            document.getElementById('section-wbs').classList.add('hidden');
+            
+            // Reset tab styling
+            const tabs = ['tab-pidum', 'tab-pidsus', 'tab-wbs'];
+            tabs.forEach(id => {
+                let el = document.getElementById(id);
+                el.classList.remove('text-kejaksaan-green', 'border-kejaksaan-green');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+
+            // Show active section & style active tab
+            document.getElementById('section-' + tabId).classList.remove('hidden');
+            let activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('text-gray-500', 'border-transparent');
+            activeTab.classList.add('text-kejaksaan-green', 'border-kejaksaan-green');
+
+            // Initialize chart only when PIDSUS is opened to save resource
+            if(tabId === 'pidsus' && !window.chartInitialized) {
+                initChart();
+                window.chartInitialized = true;
+            }
+        }
+
+        // Simulate Case Search Loading
+        function searchCase() {
+            const input = document.getElementById('searchInput').value;
+            const btn = event.currentTarget;
+            
+            if(!input) {
+                alert("Silakan masukkan Nomor SPDP atau Nama");
+                return;
+            }
+
+            // Change button state
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Mencari...`;
+            
+            // Simulate API Call (Load time < 2.5s according to PRD)
+            setTimeout(() => {
+                document.getElementById('caseResult').classList.remove('hidden');
+                btn.innerHTML = originalText;
+                
+                // Scroll to result smoothly
+                document.getElementById('caseResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 1200); 
+        }
+
+        // Initialize Chart.js for Asset Recovery
+        function initChart() {
+            const ctx = document.getElementById('assetChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Uang Pengganti', 'Tanah & Bangunan', 'Kendaraan'],
+                    datasets: [{
+                        data: [50, 35, 15],
+                        backgroundColor: [
+                            '#005a32', // Kejaksaan Green
+                            '#d4af37', // Gold
+                            '#9ca3af'  // Gray
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    </script>
+</body>
+</html>
